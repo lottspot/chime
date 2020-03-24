@@ -3,6 +3,7 @@
 from collections import namedtuple
 from datetime import datetime, timedelta
 from typing import Optional
+from base64 import b64encode
 
 import numpy as np  # type: ignore
 import pandas as pd  # type: ignore
@@ -12,14 +13,11 @@ import pandas as pd  # type: ignore
 
 # (0.02, 7) is 2%, 7 days
 # be sure to multiply by 100 when using as a default to the pct widgets!
-RateLos = namedtuple('RateLos', ('rate', 'length_of_stay'))
-
+RateLos = namedtuple("RateLos", ("rate", "length_of_stay"))
 
 
 def add_date_column(
-    df: pd.DataFrame,
-    drop_day_column: bool = False,
-    date_format: Optional[str] = None,
+    df: pd.DataFrame, drop_day_column: bool = False, date_format: Optional[str] = None,
 ) -> pd.DataFrame:
     """Copies input data frame and converts "day" column to "date" column
 
@@ -68,3 +66,15 @@ def add_date_column(
     df = df[date_columns + non_date_columns]
 
     return df
+
+def dataframe_to_base64(df: pd.DataFrame) -> str:
+    """Converts a dataframe to a base64-encoded CSV representation of that data.
+
+    This is useful for building datauris for use to download the data in the browser.
+
+    Arguments:
+        df: The dataframe to convert
+    """
+    csv = df.to_csv(index=False)
+    b64 = b64encode(csv.encode()).decode()
+    return b64
