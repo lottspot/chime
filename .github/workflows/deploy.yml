@@ -37,19 +37,31 @@ jobs:
           $(printf '%s' "$KUBE_CONFIG_DATA" | base64 -d)
           EOF
 
-          app_diff=$(kubectl diff -f $app_manifest)
-          prod_diff=$(kubectl diff -Rf $prod_manifest_dir)
-
-          cat <<EOF > $comment_file
+          app_diff=$(kubectl diff -f $app_manifest || true)
+          if [ -n "$app_diff" ]; then
+            app_diff_msg=$(cat <<EOF
           Changes from $app_manifest:
           ```
           $app_diff
           ```
 
+          EOF)
+          fi
+
+          prod_diff=$(kubectl diff -Rf $prod_manifest_dir || true)
+          if [ -n "$prod_diff" ]; then
+            prod_diff_msg=$(cat <<EOF
           Changes from $prod_manifest_dir:
           ```
           $prod_diff
           ```
+
+          EOF)
+          fi
+
+          cat <<EOF > $comment_file
+          $app_diff_msg
+          $prod_diff_msg
           EOF
 
       - uses: actions/upload-artifact@v1
