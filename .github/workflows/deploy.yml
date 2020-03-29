@@ -41,9 +41,9 @@ jobs:
           if [ -n "$app_diff" ]; then
             app_diff_msg=$(cat <<EOF
           Changes from $app_manifest:
-          ```
+          \`\`\`
           $app_diff
-          ```
+          \`\`\`
 
           EOF)
           fi
