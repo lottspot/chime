@@ -40,7 +40,7 @@ jobs:
           app_diff=$(kubectl diff -f $app_manifest || true)
           if [ -n "$app_diff" ]; then
             app_diff_msg=$(cat <<EOF
-          Changes from $app_manifest:
+          To be applied to prod from $app_manifest:
           \`\`\`
           $app_diff
           \`\`\`
@@ -51,7 +51,7 @@ jobs:
           prod_diff=$(kubectl diff -Rf $prod_manifest_dir || true)
           if [ -n "$prod_diff" ]; then
             prod_diff_msg=$(cat <<EOF
-          Changes from $prod_manifest_dir:
+          To be applied to prod from $prod_manifest_dir:
           ```
           $prod_diff
           ```
