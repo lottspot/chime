@@ -37,15 +37,18 @@ jobs:
           $(printf '%s' "$KUBE_CONFIG_DATA" | base64 -d)
           EOF
 
+          app_diff=$(kubectl diff -f $app_manifest)
+          prod_diff=$(kubectl diff -Rf $prod_manifest_dir)
+
           cat <<EOF > $comment_file
           Changes from $app_manifest:
           ```
-          $(kubectl diff -f $app_manifest)
+          $app_diff
           ```
 
           Changes from $prod_manifest_dir:
           ```
-          $(kubectl diff -Rf $prod_manifest_dir
+          $prod_diff
           ```
           EOF
 
