@@ -45,11 +45,11 @@ jobs:
           EOF
 
       - name: Publish resource diffs
-        uses: harupy/comment-on-pr@v0.1.0
+        uses: machine-learning-apps/pr-comment@1.0.0
         env:
           GITHUB_TOKEN: ${{ github.token }}
         with:
-          filename: /tmp/k8s_diff.txt
+          path: /tmp/k8s_diff.txt
 
   deploy-prod:
     if: github.event.pull_request.merged
