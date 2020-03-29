@@ -16,7 +16,7 @@ env:
 
 jobs:
   show-changes:
-    if: github.event.pull_request.state != closed
+    if: github.event.pull_request.state != 'closed'
     runs-on: ubuntu-latest
 
     steps:
