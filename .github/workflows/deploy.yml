@@ -39,7 +39,7 @@ jobs:
         run: |
           # Find tag ref
           git fetch --tags
-          head_sha=$(git rev-parse ${{ github.head_ref }})
+          head_sha=$(git rev-parse refs/heads/${{ github.head_ref }})
           ref=$(git describe --abbrev=0 --match 'v*' --exclude 'v*-rc.*' --tags $head_sha
           echo "::set-env name=DEPLOY_REF::$ref"
 
@@ -118,7 +118,7 @@ jobs:
         run: |
           # Find tag ref
           git fetch --tags
-          head_sha=$(git rev-parse ${{ github.head_ref }})
+          head_sha=$(git rev-parse refs/heads/${{ github.head_ref }})
           ref=$(git describe --abbrev=0 --match 'v*' --exclude 'v*-rc.*' --tags $head_sha
           echo "::set-env name=DEPLOY_REF::$ref"
 
