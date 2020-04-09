@@ -154,18 +154,20 @@ jobs:
           # Update image version in application manifest
           sed -Ei "s,(- image: docker.pkg.github.com)(.*),\1/${GITHUB_REPOSITORY,,}/$IMAGE_NAME:$VERSION," k8s/app.yaml
 
+          # Commit change
+          git config --local user.email services@codeforphilly.com
+          git config --local user.name "Chime CI"
+          git add k8s/app.yaml
+          git commit -m "chore: bump k8s manifest up CHIME ${{ env.VERSION }}"
+
           # Show updated manifest file
           cat k8s/app.yaml
 
       - name: Push manifest update
-        uses: github-actions-x/commit@v2.5
+        uses: ad-m/github-push-action@v0.5.0
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          push-branch: deploy/${{ env.VERSION }}
-          commit-message: "chore: bump k8s manifest up CHIME ${{ env.VERSION }}"
-          rebase: 'true'
-          name: Chime CI
-          email: services@codeforphilly.com
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          branch: deploy/${{ env.VERSION }}
 
       - name: Stage deployment
         uses: repo-sync/pull-request@v2
