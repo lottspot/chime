@@ -78,7 +78,7 @@ jobs:
           $image_shapath
           EOF
 
-      - name: upload latest image path
+      - name: Save image path
         uses: actions/upload-artifact@v1
         with:
           name: image
