@@ -172,7 +172,7 @@ jobs:
       - name: Push manifest update
         uses: ad-m/github-push-action@v0.5.0
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+          github_token: ${{ secrets.workflow_admin_token }}
           branch: refs/heads/deploy/${{ env.VERSION }}
 
       - name: Stage deployment
