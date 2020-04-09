@@ -43,13 +43,13 @@ jobs:
           ref=$(git describe --abbrev=0 --match 'v*' --exclude 'v*-rc.*' --tags $head_sha
           echo "::set-env name=DEPLOY_REF::$ref"
 
-          if [ -z "${{ env.DEPLOY_REF }}" ]; then
+          if [ -z "$ref" ]; then
             echo error: could not find release tag for commit $head_sha
             exit 1
           fi
 
           # Strip "v" prefix from tag name
-          VERSION=$(echo ${{ env.DEPLOY_REF }} | sed -e 's/^v//')
+          VERSION=$(echo $ref | sed -e 's/^v//')
 
           # Pass version number to subsequent steps
           echo "::set-env name=VERSION::$VERSION"
@@ -122,13 +122,13 @@ jobs:
           ref=$(git describe --abbrev=0 --match 'v*' --exclude 'v*-rc.*' --tags $head_sha
           echo "::set-env name=DEPLOY_REF::$ref"
 
-          if [ -z "${{ env.DEPLOY_REF }}" ]; then
+          if [ -z "$ref" ]; then
             echo error: could not find release tag for commit $head_sha
             exit 1
           fi
 
           # Strip "v" prefix from tag name
-          VERSION=$(echo ${{ env.DEPLOY_REF }} | sed -e 's/^v//')
+          VERSION=$(echo $ref | sed -e 's/^v//')
 
           # Pass version number to subsequent steps
           echo "::set-env name=VERSION::$VERSION"
