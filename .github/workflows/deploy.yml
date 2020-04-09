@@ -21,6 +21,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0  # use full history to find head_ref
       - uses: azure/setup-kubectl@v1
         with:
           version: v1.18.0
@@ -36,7 +38,7 @@ jobs:
       - name: Get app version
         run: |
           # Find tag ref
-          ref=$(git show-ref --tags -d | grep ^${{ github.sha }} | awk '{ print $2 }')
+          ref=$(git show-ref --tags -d | grep ^$(git rev-parse ${{ github.head_ref }}) | awk '{ print $2 }')
 
           if [ -z "$ref" ]; then
             echo error: could not find release tag for commit ${{ github.sha }}
@@ -99,7 +101,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
         with:
-          fetch-depth: 2  # Tag is attached to sha before merge commit
+          fetch-depth: 0  # use full history to find head_ref
       - uses: azure/setup-kubectl@v1
         with:
           version: v1.18.0
@@ -115,7 +117,7 @@ jobs:
       - name: Get app version
         run: |
           # Find tag ref
-          ref=$(git show-ref --tags -d | grep "^$$(git rev-parse {{ github.sha }}^)" | awk '{ print $2 }')
+          ref=$(git show-ref --tags -d | grep "^$(git rev-parse ${{ github.head_ref }})" | awk '{ print $2 }')
 
           if [ -z "$ref" ]; then
             echo error: could not find release tag for commit ${{ github.sha }}
