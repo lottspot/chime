@@ -78,7 +78,7 @@ jobs:
           $image_shapath
           EOF
 
-      - name: Save image path
+      - name: Publish image registry path
         uses: actions/upload-artifact@v1
         with:
           name: image
@@ -106,7 +106,7 @@ jobs:
           $(printf '%s' "$KUBE_CONFIG_DATA" | base64 -d)
           EOF
 
-      - name: Get latest image path
+      - name: Get image registry path
         uses: actions/download-artifact@v1
         with:
           name: image
@@ -116,6 +116,10 @@ jobs:
           set -e
           kubectl apply -Rf k8s.preprod
           kubectl -n chime set image --record deployment/chime chime="$(cat image/latest.txt)"
+
+      - name: Wait for deployment completion
+        run: |
+          set -e
           kubectl -n chime rollout status deployment.v1.apps/chime
           kubectl -n chime get deployment/chime -o yaml
 
