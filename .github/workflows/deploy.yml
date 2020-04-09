@@ -22,7 +22,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
         with:
-          fetch-depth: 2  # Needed to get tagged commit
+          fetch-depth: 0  # Get full history for tag lookup
       - uses: azure/setup-kubectl@v1
         with:
           version: v1.18.0
@@ -38,7 +38,8 @@ jobs:
       - name: Get app version
         run: |
           # Find tag ref
-          ref=$(git show-ref --tags -d | grep ^$(git rev-parse ${{ github.sha }}^1) | awk '{ print $2 }')
+          ref=$(git describe --abbrev=0 --tags ${{ github.sha }})
+          echo "::set-env name=DEPLOY_REF::$ref"
 
           if [ -z "$ref" ]; then
             echo error: could not find release tag for commit ${{ github.sha }}
@@ -67,7 +68,7 @@ jobs:
           diff=$(kubectl diff -Rf deploy-${{ env.VERSION }} || true)
           if [ -n "$diff" ]; then
             diff_msg=$(cat <<EOF
-          To be applied to prod:
+          Actions to deploy $DEPLOY_REF:
           \`\`\`diff
           $app_diff
           \`\`\`
@@ -101,7 +102,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
         with:
-          fetch-depth: 2  # Needed to get tagged commit
+          fetch-depth: 0  # Get full history for tag lookup
       - uses: azure/setup-kubectl@v1
         with:
           version: v1.18.0
@@ -117,12 +118,15 @@ jobs:
       - name: Get app version
         run: |
           # Find tag ref
-          ref=$(git show-ref --tags -d | grep ^$(git rev-parse ${{ github.sha }}^1) | awk '{ print $2 }')
+          ref=$(git describe --abbrev=0 --tags ${{ github.sha }})
+          echo "::set-env name=DEPLOY_REF::$ref"
 
           if [ -z "$ref" ]; then
             echo error: could not find release tag for commit ${{ github.sha }}
             exit 1
           fi
+
+          echo deploying $ref
 
           # Strip git ref prefix from version
           VERSION=$(echo "${{ github.ref }}" | sed -e 's,.*/\(.*\),\1,')
