@@ -42,16 +42,13 @@ jobs:
           ref=$(git describe --abbrev=0 --match 'v*' --exclude 'v*-rc.*' --tags ${{ github.sha }})
           echo "::set-env name=DEPLOY_REF::$ref"
 
-          if [ -z "$ref" ]; then
+          if [ -z "${{ env.DEPLOY_REF }}" ]; then
             echo error: could not find release tag for commit ${{ github.sha }}
             exit 1
           fi
 
-          # Strip git ref prefix from version
-          VERSION=$(echo "${{ github.ref }}" | sed -e 's,.*/\(.*\),\1,')
-
           # Strip "v" prefix from tag name
-          [[ "${{ github.ref }}" == "refs/tags/"* ]] && VERSION=$(echo $VERSION | sed -e 's/^v//')
+          VERSION=$(echo ${{ env.DEPLOY_REF }} | sed -e 's/^v//')
 
           # Pass version number to subsequent steps
           echo "::set-env name=VERSION::$VERSION"
@@ -123,18 +120,13 @@ jobs:
           ref=$(git describe --abbrev=0 --match 'v*' --exclude 'v*-rc.*' --tags ${{ github.sha }})
           echo "::set-env name=DEPLOY_REF::$ref"
 
-          if [ -z "$ref" ]; then
+          if [ -z "${{ env.DEPLOY_REF }}" ]; then
             echo error: could not find release tag for commit ${{ github.sha }}
             exit 1
           fi
 
-          echo deploying $ref
-
-          # Strip git ref prefix from version
-          VERSION=$(echo "${{ github.ref }}" | sed -e 's,.*/\(.*\),\1,')
-
           # Strip "v" prefix from tag name
-          [[ "${{ github.ref }}" == "refs/tags/"* ]] && VERSION=$(echo $VERSION | sed -e 's/^v//')
+          VERSION=$(echo ${{ env.DEPLOY_REF }} | sed -e 's/^v//')
 
           # Pass version number to subsequent steps
           echo "::set-env name=VERSION::$VERSION"
@@ -147,6 +139,7 @@ jobs:
       - name: Deploy to prod
         run: |
           set -e
+          echo deploying version ${{ env.VERSION }}
           kubectl apply -Rf deploy-${{ env.VERSION }}
 
       - name: Wait for deployment to complete
