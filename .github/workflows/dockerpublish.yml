@@ -115,9 +115,9 @@ jobs:
         run: |
           set -e
           kubectl apply -Rf k8s.preprod
-          kubectl set image --record deployment/chime chime="$(cat image/latest.txt)"
+          kubectl -n chime set image --record deployment/chime chime="$(cat image/latest.txt)"
           kubectl -n chime rollout status deployment.v1.apps/chime
-          kubectl -n chime show deployment/chime -o yaml
+          kubectl -n chime get deployment/chime -o yaml
 
   stage-prod-deploy:
     needs: push
