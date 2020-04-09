@@ -55,28 +55,43 @@ jobs:
         run: |
           IMAGE_ID="docker.pkg.github.com/${GITHUB_REPOSITORY,,}/${IMAGE_NAME}"
 
-          # Strip git ref prefix from version
-          VERSION=$(echo "${{ github.ref }}" | sed -e 's,.*/\(.*\),\1,')
-
-          # Strip "v" prefix from tag name
-          [[ "${{ github.ref }}" == "refs/tags/"* ]] && VERSION=$(echo $VERSION | sed -e 's/^v//')
-
-          # Use Docker `latest` tag convention
-          [ "$VERSION" == "master" ] && VERSION=latest
-
-          echo IMAGE_ID=$IMAGE_ID
-          echo VERSION=$VERSION
-
-          docker tag image $IMAGE_ID:$VERSION
+          # Common tag for all builds
           docker tag image $IMAGE_ID:${{ github.sha }}
-          docker tag image $IMAGE_ID:latest
-          docker push $IMAGE_ID:$VERSION
           docker push $IMAGE_ID:${{ github.sha }}
-          docker push $IMAGE_ID:latest
-
           image_path=$IMAGE_ID:${{ github.sha }}
-          echo "image registry path: $image_path"
-          cat <<EOF | tr -d '\n' > latest.txt
+          imgpath_artifact=dev.txt
+
+          # Tagged builds only
+          if [[ ${{ github.ref }} == refs/tags/v* ]]; then
+            # Strip git ref prefix from version
+            VERSION=$(echo "${{ github.ref }}" | sed -e 's,.*/\(.*\),\1,')
+
+            # Strip "v" prefix from tag name
+            [[ "${{ github.ref }}" == "refs/tags/"* ]] && VERSION=$(echo $VERSION | sed -e 's/^v//')
+
+            echo IMAGE_ID=$IMAGE_ID
+            echo VERSION=$VERSION
+
+            # Publish tag
+            docker tag image $IMAGE_ID:$VERSION
+            docker push $IMAGE_ID:$VERSION
+
+            # Publish preprod/prod tag
+            if [[ ${{ github.ref }} == refs/tags/v*-rc.* ]]; then
+              docker tag image $IMAGE_ID:preprod
+              docker push $IMAGE_ID:preprod
+              imgpath_artifact=preprod.txt
+              echo pushed image for preprod
+            else
+              docker tag image $IMAGE_ID:prod
+              docker push $IMAGE_ID:prod
+              imgpath_artifact=prod.txt
+              echo pushed image for prod
+            fi
+          fi
+
+          echo "::set-env name=IMGPATH_ARTIFACT::$imgpath_artifact"
+          cat <<EOF | tr -d '\n' > $imgpath_artifact
           $image_path
           EOF
 
@@ -84,7 +99,7 @@ jobs:
         uses: actions/upload-artifact@v1
         with:
           name: image
-          path: latest.txt
+          path: ${{ env.IMGPATH_ARTIFACT }}
 
   deploy-preprod:
 
@@ -117,68 +132,10 @@ jobs:
         run: |
           set -e
           kubectl apply -Rf k8s.preprod
-          kubectl -n chime set image --record deployment/chime chime="$(cat image/latest.txt)"
+          kubectl -n chime set image --record deployment/chime chime="$(cat image/preprod.txt)"
 
       - name: Wait for deployment completion
         run: |
           set -e
           kubectl -n chime rollout status deployment.v1.apps/chime
           kubectl -n chime get deployment/chime -o yaml
-
-  stage-prod-deploy:
-    needs: push
-    if: github.event_name == 'push' && ! contains(github.ref, '-rc.')
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v2
-        with:
-          fetch-depth: 0  # Needed for proper rebase
-      - uses: azure/setup-kubectl@v1
-        with:
-          version: v1.18.0
-
-      - name: Add kubeconfig to environment
-        run: |
-          set -e
-          test -e ~/.kube || mkdir ~/.kube
-          cat <<EOF > ~/.kube/config
-          $(printf '%s' "$KUBE_CONFIG_DATA" | base64 -d)
-          EOF
-
-      - name: Update application manifest
-        run: |
-          # Strip git ref prefix from version
-          VERSION=$(echo "${{ github.ref }}" | sed -e 's,.*/\(.*\),\1,')
-
-          # Strip "v" prefix from tag name
-          [[ "${{ github.ref }}" == "refs/tags/"* ]] && VERSION=$(echo $VERSION | sed -e 's/^v//')
-
-          # Pass version to subsequent steps
-          echo "::set-env name=VERSION::$VERSION"
-
-          # Update image version in application manifest
-          sed -Ei "s,(- image: docker.pkg.github.com)(.*),\1/${GITHUB_REPOSITORY,,}/$IMAGE_NAME:$VERSION," k8s/app.yaml
-
-          # Commit change
-          git config --local user.email services@codeforphilly.com
-          git config --local user.name "Chime CI"
-          git add k8s/app.yaml
-          git commit -m "chore: bump k8s manifest up CHIME ${{ env.VERSION }}"
-
-          # Show updated manifest file
-          cat k8s/app.yaml
-
-      - name: Push manifest update
-        uses: ad-m/github-push-action@v0.5.0
-        with:
-          github_token: ${{ secrets.workflow_admin_token }}
-          branch: refs/heads/deploy/${{ env.VERSION }}
-
-      - name: Stage deployment
-        uses: repo-sync/pull-request@v2
-        with:
-          source_branch: deploy/${{ env.VERSION }}
-          destination_branch: releases/v1
-          pr_title: Deploy CHIME v${{ env.VERSION }}
-          github_token: "${{ secrets.GITHUB_TOKEN }}"
