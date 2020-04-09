@@ -59,7 +59,6 @@ jobs:
           docker tag image $IMAGE_ID:${{ github.sha }}
           docker push $IMAGE_ID:${{ github.sha }}
           image_path=$IMAGE_ID:${{ github.sha }}
-          imgpath_artifact=dev.txt
 
           # Tagged builds only
           if [[ ${{ github.ref }} == refs/tags/v* ]]; then
@@ -76,22 +75,15 @@ jobs:
             docker tag image $IMAGE_ID:$VERSION
             docker push $IMAGE_ID:$VERSION
 
-            # Publish preprod/prod tag
-            if [[ ${{ github.ref }} == refs/tags/v*-rc.* ]]; then
-              docker tag image $IMAGE_ID:preprod
-              docker push $IMAGE_ID:preprod
-              imgpath_artifact=preprod.txt
-              echo pushed image for preprod
-            else
-              docker tag image $IMAGE_ID:prod
-              docker push $IMAGE_ID:prod
-              imgpath_artifact=prod.txt
-              echo pushed image for prod
+            # Only publish latest tag for production releases
+            if [[ ${{ github.ref }} != refs/tags/v*-rc.* ]]; then
+              docker tag image $IMAGE_ID:latest
+              docker push $IMAGE_ID:latest
+              echo pushed latest prod image
             fi
           fi
 
-          echo "::set-env name=IMGPATH_ARTIFACT::$imgpath_artifact"
-          cat <<EOF | tr -d '\n' > $imgpath_artifact
+          cat <<EOF | tr -d '\n' > current-build.txt
           $image_path
           EOF
 
@@ -99,7 +91,7 @@ jobs:
         uses: actions/upload-artifact@v1
         with:
           name: image
-          path: ${{ env.IMGPATH_ARTIFACT }}
+          path: current-build.txt
 
   deploy-preprod:
 
@@ -130,7 +122,7 @@ jobs:
         run: |
           set -e
           kubectl apply -Rf k8s.preprod
-          kubectl -n chime set image --record deployment/chime chime="$(cat image/preprod.txt)"
+          kubectl -n chime set image --record deployment/chime chime="$(cat image/current-build.txt)"
 
       - name: Wait for deployment to complete
         run: |
