@@ -38,6 +38,7 @@ jobs:
       - name: Get app version
         run: |
           # Find tag ref
+          git fetch --tags
           ref=$(git describe --abbrev=0 --tags ${{ github.sha }})
           echo "::set-env name=DEPLOY_REF::$ref"
 
@@ -118,6 +119,7 @@ jobs:
       - name: Get app version
         run: |
           # Find tag ref
+          git fetch --tags
           ref=$(git describe --abbrev=0 --tags ${{ github.sha }})
           echo "::set-env name=DEPLOY_REF::$ref"
 
