@@ -149,6 +149,9 @@ jobs:
           # Strip "v" prefix from tag name
           [[ "${{ github.ref }}" == "refs/tags/"* ]] && VERSION=$(echo $VERSION | sed -e 's/^v//')
 
+          # Pass version number to subsequent steps
+          echo "::set-env name=VERSION::$VERSION"
+
           # Update image version in application manifest
           sed -Ei "s,(- image: docker.pkg.github.com)(.*),\1/${GITHUB_REPOSITORY,,}/$IMAGE_NAME:${{ github.sha }}," k8s/app.yaml
 
@@ -158,11 +161,11 @@ jobs:
       - name: Publish current app manifest
         uses: actions/upload-artifact@v1
         with:
-          name: deploy
+          name: deploy-${{ env.VERSION }}
           path: k8s/app.yaml
 
       - name: Publish current prod manifests
         uses: actions/upload-artifact@v1
         with:
-          name: deploy
+          name: deploy-${{ env.VERSION }}
           path: k8s.prod
