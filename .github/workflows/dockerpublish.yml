@@ -68,14 +68,16 @@ jobs:
           echo VERSION=$VERSION
 
           docker tag image $IMAGE_ID:$VERSION
+          docker tag image $IMAGE_ID:${{ github.sha }}
           docker tag image $IMAGE_ID:latest
           docker push $IMAGE_ID:$VERSION
+          docker push $IMAGE_ID:${{ github.sha }}
           docker push $IMAGE_ID:latest
 
-          image_shapath=$(docker image inspect $IMAGE_ID:latest -f '{{ index .RepoDigests 0 }}')
-          echo "image path: $image_shapath"
+          image_path=$IMAGE_ID:${{ github.sha }}
+          echo "image registry path: $image_path"
           cat <<EOF | tr -d '\n' > latest.txt
-          $image_shapath
+          $image_path
           EOF
 
       - name: Publish image registry path
