@@ -39,11 +39,12 @@ jobs:
         run: |
           # Find tag ref
           git fetch --tags
-          ref=$(git describe --abbrev=0 --match 'v*' --exclude 'v*-rc.*' --tags ${{ github.sha }})
+          head_sha=$(git rev-parse ${{ github.head_ref }})
+          ref=$(git describe --abbrev=0 --match 'v*' --exclude 'v*-rc.*' --tags $head_sha
           echo "::set-env name=DEPLOY_REF::$ref"
 
           if [ -z "${{ env.DEPLOY_REF }}" ]; then
-            echo error: could not find release tag for commit ${{ github.sha }}
+            echo error: could not find release tag for commit $head_sha
             exit 1
           fi
 
@@ -117,11 +118,12 @@ jobs:
         run: |
           # Find tag ref
           git fetch --tags
-          ref=$(git describe --abbrev=0 --match 'v*' --exclude 'v*-rc.*' --tags ${{ github.sha }})
+          head_sha=$(git rev-parse ${{ github.head_ref }})
+          ref=$(git describe --abbrev=0 --match 'v*' --exclude 'v*-rc.*' --tags $head_sha
           echo "::set-env name=DEPLOY_REF::$ref"
 
           if [ -z "${{ env.DEPLOY_REF }}" ]; then
-            echo error: could not find release tag for commit ${{ github.sha }}
+            echo error: could not find release tag for commit $head_sha
             exit 1
           fi
 
