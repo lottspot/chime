@@ -68,7 +68,21 @@ jobs:
           echo VERSION=$VERSION
 
           docker tag image $IMAGE_ID:$VERSION
+          docker tag image $IMAGE_ID:latest
           docker push $IMAGE_ID:$VERSION
+          docker push $IMAGE_ID:latest
+
+          image_shapath=$(docker image inspect $IMAGE_ID:latest -f '{{ index .RepoDigests 0 }}')
+          echo "image path: $image_shapath"
+          cat <<EOF | tr -d '\n' > latest.txt
+          $image_shapath
+          EOF
+
+      - name: upload latest image path
+        uses: actions/upload-artifact@v1
+        with:
+          name: image
+          path: latest.txt
 
   deploy-preprod:
 
@@ -80,6 +94,52 @@ jobs:
       - uses: actions/checkout@v2
         with:
           fetch-depth: 0  # Needed for proper rebase
+      - uses: azure/setup-kubectl@v1
+        with:
+          version: v1.18.0
+
+      - name: Add kubeconfig to environment
+        run: |
+          set -e
+          test -e ~/.kube || mkdir ~/.kube
+          cat <<EOF > ~/.kube/config
+          $(printf '%s' "$KUBE_CONFIG_DATA" | base64 -d)
+          EOF
+
+      - name: Get latest image path
+        uses: actions/download-artifact@v1
+        with:
+          name: image
+
+      - name: Deploy to preprod
+        run: |
+          set -e
+          kubectl apply -Rf k8s.preprod
+          kubectl set image --record deployment/chime chime="$(cat image/latest.txt)"
+          kubectl -n chime rollout status deployment.v1.apps/chime
+          kubectl -n chime show deployment/chime -o yaml
+
+  stage-prod-deploy:
+    needs: push
+    if: github.event_name == 'push' && ! contains(github.ref, '-rc.')
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0  # Needed for proper rebase
+      - uses: azure/setup-kubectl@v1
+        with:
+          version: v1.18.0
+
+      - name: Add kubeconfig to environment
+        run: |
+          set -e
+          test -e ~/.kube || mkdir ~/.kube
+          cat <<EOF > ~/.kube/config
+          $(printf '%s' "$KUBE_CONFIG_DATA" | base64 -d)
+          EOF
+
       - name: Update application manifest
         run: |
           # Strip git ref prefix from version
@@ -97,32 +157,20 @@ jobs:
           # Show updated manifest file
           cat k8s/app.yaml
 
-      - name: Deploy to preprod
-        uses: steebchen/kubectl@v1.0.0
-        with:
-          args: apply -f k8s/app.yaml
-
-      - name: Sync preprod resources
-        uses: steebchen/kubectl@v1.0.0
-        with:
-          args: apply -Rf k8s.preprod
-
-      - name: Wait for deploy to complete
-        uses: steebchen/kubectl@v1.0.0
-        with:
-          args: -n chime rollout status deployment.v1.apps/chime
-
-      - name: Show completed deployment
-        uses: steebchen/kubectl@v1.0.0
-        with:
-          args: -n chime get deployment chime -o yaml
-
       - name: Push manifest update
         uses: github-actions-x/commit@v2.5
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          push-branch: ${{ env.DEPLOY_PUSH_BRANCH }}
+          push-branch: deploy/${{ env.VERSION }}
           commit-message: "chore: bump k8s manifest up CHIME ${{ env.VERSION }}"
           rebase: 'true'
           name: Chime CI
           email: services@codeforphilly.com
+
+      - name: Stage deployment
+        uses: repo-sync/pull-request@v2
+        with:
+          source_branch: deploy/${{ env.VERSION }}
+          destination_branch: releases/v1
+          pr_title: Deploy CHIME v${{ env.VERSION }}
+          github_token: "${{ secrets.GITHUB_TOKEN }}"
