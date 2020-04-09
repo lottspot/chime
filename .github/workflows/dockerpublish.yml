@@ -173,7 +173,7 @@ jobs:
         uses: ad-m/github-push-action@v0.5.0
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          branch: deploy/${{ env.VERSION }}
+          branch: HEAD:deploy/${{ env.VERSION }}
 
       - name: Stage deployment
         uses: repo-sync/pull-request@v2
