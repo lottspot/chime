@@ -60,7 +60,6 @@ jobs:
       - name: Get resource diffs
         run: |
           set -e
-          find deploy -type f
           comment_file=/tmp/k8s_diff.txt
 
           diff=$(kubectl diff -Rf deploy-${{ env.VERSION }} || true)
@@ -99,6 +98,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
+        with:
+          fetch-depth: 2  # Tag is attached to sha before merge commit
       - uses: azure/setup-kubectl@v1
         with:
           version: v1.18.0
