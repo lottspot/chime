@@ -192,7 +192,7 @@ jobs:
         run: |
           set -e
           manifest_dir=deploy-$(cat release/tag)
-          find $manifest_dir -type f -print0 | xargs -0 cat | kubectl diff -f - || true
+          find $manifest_dir/ -type f -print0 | xargs -0 cat | kubectl diff -f - || true
           kubectl apply -Rf $manifest_dir
 
       - name: Wait for deployment to complete
@@ -233,7 +233,7 @@ jobs:
           set -e
           pr_body_file=/tmp/pr_body.txt
 
-          diff=$(find deploy-$TAGNAME -type f -print0 | xargs -0 cat | kubectl diff -f - || true)
+          diff=$(find deploy-$TAGNAME/ -type f -print0 | xargs -0 cat | kubectl diff -f - || true)
           cat <<EOF > $pr_body_file
           Deploy CHIME ${{ env.VERSION }}
 
