@@ -158,7 +158,7 @@ jobs:
   deploy-preprod:
 
     needs: publish-manifests
-    if: github.event_name == 'release'
+    if: github.event_name == 'release' && github.event.release.prerelease
     runs-on: ubuntu-latest
 
     steps:
