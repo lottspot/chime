@@ -222,5 +222,6 @@ jobs:
         uses: repo-sync/pull-request@v2
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
+          source_branch: ${{ env.TAGNAME }}
           destination_branch: releases/v1
           pr_title: "Deploy CHIME ${{ env.VERSION }}"
