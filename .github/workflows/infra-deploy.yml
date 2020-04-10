@@ -35,7 +35,7 @@ jobs:
           $(printf '%s' "$KUBE_CONFIG_DATA" | base64 -d)
           EOF
 
-      - name: Get app version
+      - name: Get release version
         run: |
           # Find tag ref
           git fetch --tags
@@ -47,36 +47,30 @@ jobs:
             exit 1
           fi
 
-          # Strip "v" prefix from tag name
-          VERSION=$(echo $ref | sed -e 's/^v//')
-
-          # Pass version number to subsequent steps
-          echo "::set-env name=VERSION::$VERSION"
-
-      - name: Get deployment manifests
-        uses: actions/download-artifact@v1
-        with:
-          name: deploy-${{ env.VERSION }}
+      - name: Get manifest archive
+        run: |
+          set -e
+          tagname=${{ env.DEPLOY_REF }}
+          arc_fname=deploy-$tagname.zip
+          arc_url=https://github.com/${{ github.repository }}/releases/download/$tagname/$arc_fname
+          curl -LO "$arc_url"
+          unzip $arc_fname
 
       - name: Get resource diffs
         run: |
           set -e
           comment_file=/tmp/k8s_diff.txt
 
-          diff=$(kubectl diff -Rf deploy-${{ env.VERSION }} || true)
+          diff=$(kubectl diff -Rf deploy-${{ env.DEPLOY_REF }} || true)
           if [ -n "$diff" ]; then
-            diff_msg=$(cat <<EOF
-          Actions to deploy $DEPLOY_REF:
+            cat <<EOF > $comment_file
+          Actions to deploy ${{ env.DEPLOY_REF }}:
           \`\`\`diff
-          $app_diff
+          $diff
           \`\`\`
-
-          EOF)
+          EOF
           fi
 
-          cat <<EOF > $comment_file
-          $diff_msg
-          EOF
 
       - uses: actions/upload-artifact@v1
         with:
@@ -113,7 +107,7 @@ jobs:
           $(printf '%s' "$KUBE_CONFIG_DATA" | base64 -d)
           EOF
 
-      - name: Get app version
+      - name: Get release version
         run: |
           # Find tag ref
           git fetch --tags
@@ -125,22 +119,20 @@ jobs:
             exit 1
           fi
 
-          # Strip "v" prefix from tag name
-          VERSION=$(echo $ref | sed -e 's/^v//')
-
-          # Pass version number to subsequent steps
-          echo "::set-env name=VERSION::$VERSION"
-
-      - name: Get deployment manifests
-        uses: actions/download-artifact@v1
-        with:
-          name: deploy-${{ env.VERSION }}
+      - name: Get manifest archive
+        run: |
+          set -e
+          tagname=${{ env.DEPLOY_REF }}
+          arc_fname=deploy-$tagname.zip
+          arc_url=https://github.com/${{ github.repository }}/releases/download/$tagname/$arc_fname
+          curl -LO "$arc_url"
+          unzip $arc_fname
 
       - name: Deploy to prod
         run: |
           set -e
-          echo deploying version ${{ env.VERSION }}
-          kubectl apply -Rf deploy-${{ env.VERSION }}
+          echo deploying CHIME release ${{ env.DEPLOY_REF }}
+          kubectl apply -Rf deploy-${{ env.DEPLOY_REF }}
 
       - name: Wait for deployment to complete
         run: |

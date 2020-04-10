@@ -201,42 +201,26 @@ jobs:
           kubectl -n chime rollout status deployment.v1.apps/chime
           kubectl -n chime get deployment/chime -o yaml
 
-#  stage-prod-deploy:
-#    needs: publish-image
-#    if: github.event_name == 'push' && ! contains(github.ref, '-rc.')
-#    runs-on: ubuntu-latest
-#
-#    steps:
-#      - uses: actions/checkout@v2
-#      - uses: azure/setup-kubectl@v1
-#        with:
-#          version: v1.18.0
-#
-#      - name: Update application manifest
-#        run: |
-#          # Strip git ref prefix from version
-#          VERSION=$(echo "${{ github.ref }}" | sed -e 's,.*/\(.*\),\1,')
-#
-#          # Strip "v" prefix from tag name
-#          [[ "${{ github.ref }}" == "refs/tags/"* ]] && VERSION=$(echo $VERSION | sed -e 's/^v//')
-#
-#          # Pass version number to subsequent steps
-#          echo "::set-env name=VERSION::$VERSION"
-#
-#          # Update image version in application manifest
-#          sed -Ei "s,(- image: docker.pkg.github.com)(.*),\1/${GITHUB_REPOSITORY,,}/$IMAGE_NAME:${{ github.sha }}," k8s/app.yaml
-#
-#          # Show updated manifest file
-#          cat k8s/app.yaml
-#
-#      - name: Publish current app manifest
-#        uses: actions/upload-artifact@v1
-#        with:
-#          name: deploy-${{ env.VERSION }}
-#          path: k8s/app.yaml
-#
-#      - name: Publish current prod manifests
-#        uses: actions/upload-artifact@v1
-#        with:
-#          name: deploy-${{ env.VERSION }}
-#          path: k8s.prod
+  stage-prod-deploy:
+    needs: publish-manifests
+    if: github.event_name == 'release' && ! github.event.release.prerelease
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Get release information
+        uses: actions/download-artifact@v1
+        with:
+          name: release
+
+      - name: Load release information into environment
+        run: |
+          echo "::set-env name=VERSION::$(cat release/version)"
+          echo "::set-env name=TAGNAME::$(cat release/tag)"
+
+      - name: Open deployment pull request
+        uses: repo-sync/pull-request@v2
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          source_branch: ${{ env.TAGNAME }}
+          destination_branch: releases/v1
+          pr_title: "Deploy CHIME ${{ env.VERSION }}"
