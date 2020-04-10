@@ -1,4 +1,4 @@
-name: Docker
+name: Build deployment artifacts
 
 on:
   push:
