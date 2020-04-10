@@ -216,11 +216,31 @@ jobs:
       - name: Load release information into environment
         run: |
           echo "::set-env name=VERSION::$(cat release/version)"
+          echo "::set-env name=TAGNAME::$(cat release/tag)"
+          echo "::set-env name=GITHUB_TOKEN::${{ secrets.GITHUB_TOKEN }}"
+
+      - name: Get manifest archive
+        run: |
+          set -e
+          tagname=$TAGNAME
+          arc_fname=deploy-$tagname.zip
+          arc_url=https://github.com/${{ github.repository }}/releases/download/$tagname/$arc_fname
+          curl -LO "$arc_url"
+          unzip $arc_fname
 
       - name: Open deployment pull request
-        uses: repo-sync/pull-request@v2
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          source_branch: develop
-          destination_branch: releases/v1
-          pr_title: "Deploy CHIME ${{ env.VERSION }}"
+        run: |
+          set -e
+          pr_body_file=/tmp/k8s_diff.txt
+
+          diff=$(kubectl diff -Rf deploy-$TAGNAME || true)
+          cat <<EOF > $pr_body_file
+          Deploy CHIME ${{ env.VERSION }}
+
+          Actions to deploy $TAGNAME:
+          \`\`\`diff
+          $diff
+          \`\`\`
+          EOF
+
+          hub pull-request -b releases/v1 -h develop -F $pr_body_file
