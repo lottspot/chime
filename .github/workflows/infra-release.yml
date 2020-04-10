@@ -217,7 +217,8 @@ jobs:
         run: |
           echo "::set-env name=VERSION::$(cat release/version)"
           echo "::set-env name=TAGNAME::$(cat release/tag)"
-          echo "::set-env name=GITHUB_TOKEN::${{ secrets.GITHUB_TOKEN }}"
+          echo "::set-env name=GITHUB_USER::${{ github.actor }}"
+          echo "::set-env name=GITHUB_TOKEN::${{ github.token }}"
 
       - name: Get manifest archive
         run: |
