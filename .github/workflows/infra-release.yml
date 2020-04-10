@@ -1,4 +1,4 @@
-name: Build deployment artifacts
+name: Deployment artifacts
 
 on:
   release:
