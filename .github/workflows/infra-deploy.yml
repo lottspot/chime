@@ -61,6 +61,7 @@ jobs:
           set -e
           comment_file=/tmp/k8s_diff.txt
 
+          touch $comment_file
           diff=$(kubectl diff -Rf deploy-${{ env.DEPLOY_REF }} || true)
           if [ -n "$diff" ]; then
             cat <<EOF > $comment_file
