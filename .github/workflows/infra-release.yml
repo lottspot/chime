@@ -216,12 +216,11 @@ jobs:
       - name: Load release information into environment
         run: |
           echo "::set-env name=VERSION::$(cat release/version)"
-          echo "::set-env name=TAGNAME::$(cat release/tag)"
 
       - name: Open deployment pull request
         uses: repo-sync/pull-request@v2
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          source_branch: ${{ env.TAGNAME }}
+          source_branch: develop
           destination_branch: releases/v1
           pr_title: "Deploy CHIME ${{ env.VERSION }}"

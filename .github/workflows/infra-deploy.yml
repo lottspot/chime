@@ -53,7 +53,7 @@ jobs:
           tagname=${{ env.DEPLOY_REF }}
           arc_fname=deploy-$tagname.zip
           arc_url=https://github.com/${{ github.repository }}/releases/download/$tagname/$arc_fname
-          curl -LO "$arc_url"
+          curl -fLO "$arc_url"
           unzip $arc_fname
 
       - name: Get resource diffs
@@ -125,7 +125,7 @@ jobs:
           tagname=${{ env.DEPLOY_REF }}
           arc_fname=deploy-$tagname.zip
           arc_url=https://github.com/${{ github.repository }}/releases/download/$tagname/$arc_fname
-          curl -LO "$arc_url"
+          curl -fLO "$arc_url"
           unzip $arc_fname
 
       - name: Deploy to prod
