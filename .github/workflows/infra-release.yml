@@ -208,6 +208,18 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
+      - uses: azure/setup-kubectl@v1
+        with:
+          version: v1.18.0
+
+      - name: Add kubeconfig to environment
+        run: |
+          set -e
+          test -e ~/.kube || mkdir ~/.kube
+          cat <<EOF > ~/.kube/config
+          $(printf '%s' "$KUBE_CONFIG_DATA" | base64 -d)
+          EOF
+
       - name: Get release information
         uses: actions/download-artifact@v1
         with:
@@ -233,13 +245,12 @@ jobs:
           set -e
           pr_body_file=/tmp/pr_body.txt
 
-          diff=$(find deploy-$TAGNAME/ -type f -print0 | xargs -0 cat | kubectl diff -f - || true)
           cat <<EOF > $pr_body_file
           Deploy CHIME ${{ env.VERSION }}
 
           Actions to deploy $TAGNAME:
           \`\`\`diff
-          $diff
+          $(find deploy-$TAGNAME/ -type f -print0 | xargs -0 cat | kubectl diff -f - || true)
           \`\`\`
           EOF
 
