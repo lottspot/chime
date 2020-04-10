@@ -207,6 +207,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - uses: actions/checkout@v2
       - name: Get release information
         uses: actions/download-artifact@v1
         with:
@@ -221,6 +222,5 @@ jobs:
         uses: repo-sync/pull-request@v2
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          source_branch: ${{ env.TAGNAME }}
           destination_branch: releases/v1
           pr_title: "Deploy CHIME ${{ env.VERSION }}"
