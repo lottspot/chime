@@ -132,6 +132,7 @@ jobs:
           tagname=$(cat release/tag)
           image_id=$(cat release/registry-id)
           dir=deploy-$tagname
+          zip=$dir.zip
 
           ln -s . $dir
 
@@ -139,13 +140,13 @@ jobs:
           sed -Ei "s,(- image: )(docker.pkg.github.com.*),\1$image_id," k8s/app.yaml
 
           # Add application manifest to manifest archive
-          zip $dir $dir/k8s/app.yaml
+          zip -D $zip $dir/k8s/app.yaml
 
           # Add environment manifests to manifest archive
           if ${{ github.event.release.prerelease }}; then
-            zip -r $dir $dir/k8s.preprod
+            zip -Dr $zip $dir/k8s.preprod
           else
-            zip -r $dir $dir/k8s.prod
+            zip -Dr $zip $dir/k8s.prod
           fi
 
       - name: Publish manifest archive
