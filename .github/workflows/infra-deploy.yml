@@ -59,7 +59,7 @@ jobs:
         run: |
           set -e
           echo deploying CHIME release ${{ env.DEPLOY_REF }}
-          kubectl diff -Rf deploy-${{ env.DEPLOY_REF }} || true
+          find deploy-${{ env.DEPLOY_REF }} -type f -print0 | xargs -0 cat | kubectl diff -f - || true
           kubectl apply -Rf deploy-${{ env.DEPLOY_REF }}
 
       - name: Wait for deployment to complete
