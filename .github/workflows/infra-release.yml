@@ -86,37 +86,37 @@ jobs:
         with:
           name: release
 
-     - name: Create deployment object for release
-       run: |
-         set -e
-         # Determine deployment environment
-         if ${{ github.event.release.prerelease }}; then
-           target=preprod
-         else
-           target=prod
-         fi
+      - name: Create deployment object for release
+        run: |
+          set -e
+          # Determine deployment environment
+          if ${{ github.event.release.prerelease }}; then
+            target=preprod
+          else
+            target=prod
+          fi
 
-         # Create deployment
-         hub api /repos/${{ github.repository }}/deployments -X POST --input <(cat <<EOF
-         {
-           "ref": "$(cat release/tag)",
-           "auto_merge": false,
-           "required_contexts": [],
-           "environment": "$target"
-         }
-         EOF) > /tmp/deployment.json
+          # Create deployment
+          hub api /repos/${{ github.repository }}/deployments -X POST --input <(cat <<EOF
+          {
+            "ref": "$(cat release/tag)",
+            "auto_merge": false,
+            "required_contexts": [],
+            "environment": "$target"
+          }
+          EOF) > /tmp/deployment.json
 
-         # Set status to pending
-         hub api /repos/${{ github.repository }}/deployments/$(jq .id < /tmp/deployment.json)/statuses  \
-           -X POST                                                                                      \
-           -H "Accept: application/json, application/vnd.github.flash-preview+json"                     \
-           --input <(cat <<EOF
-         {
-           "state": "pending",
-           "description": "Building deployment artifacts",
-           "log_url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-         }
-         EOF)
+          # Set status to pending
+          hub api /repos/${{ github.repository }}/deployments/$(jq .id < /tmp/deployment.json)/statuses  \
+            -X POST                                                                                      \
+            -H "Accept: application/json, application/vnd.github.flash-preview+json"                     \
+            --input <(cat <<EOF
+          {
+            "state": "pending",
+            "description": "Building deployment artifacts",
+            "log_url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          }
+          EOF)
 
   # Push image to GitHub Packages.
   # See also https://docs.docker.com/docker-hub/builds/
